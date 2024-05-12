@@ -42,6 +42,12 @@ heroku config:set DOC_USER=modir --app mra-file
 heroku config:set NODE_ENV=production --app mra-file
 heroku config:set PORT=443 --app mra-file
 heroku config:set TZ=UTC --app mra-file
+heroku config:set SECRET_KEY=ZZZ --app mra-file
+heroku config:set AUTH_SERVER_URL=http://localhost:3000 --app mra-file
+heroku config:set CORS_ALLOWED_URLS=http://localhost:2583, https://myreportapp.com, https://myreport.app --app mra-file
+heroku config:set AWS_ACCESS_KEY_ID=AAA --app mra-file
+heroku config:set AWS_SECRET_ACCESS_KEY=WWW --app mra-file
+heroku config:set AWS_REGION=ZZZ --app mra-file
 ```
 
 Then run run the above commands in the Heroku CLI or go to the `mra-file` application, then in the `Settings` tab press on the `Reveal Config Vars` button and edit them directly. Like the following picture:

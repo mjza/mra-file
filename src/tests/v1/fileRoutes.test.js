@@ -37,12 +37,12 @@ describe('/generate-presigned-url endpoints', () => {
     it('GET /generate-presigned-url should generate a valid presigned URL', async () => {
         const res = await request(app)
             .get('/v1/generate-presigned-url')
-            .query({ fileName: 'test.jpg', fileType: 'image/jpeg', domain: 1 })
+            .query({ fileName: 'test.jpg', fileType: 'image/jpeg', fileSize:1024, domain: 1 })
             .set('Authorization', `Bearer ${authData.token}`);
     
         expect(res.statusCode).toEqual(200);
         expect(res.body).toHaveProperty('presignedUrl');
-        expect(res.body).toHaveProperty('expires');
+        expect(res.body).toHaveProperty('exp');
     });    
 
 });

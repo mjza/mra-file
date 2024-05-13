@@ -93,7 +93,7 @@ async function createApp() {
     app.use('/v1', v1Routes);
 
     // Conditionally include Swagger UI middleware based on environment
-    if (true || process.env.NODE_ENV !== 'production') {
+    if (process.env.NODE_ENV !== 'production') {
 
         // Swagger definition
         const swaggerDefinition = {

@@ -1,5 +1,6 @@
 const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
+const { createPresignedPost } = require('@aws-sdk/s3-presigned-post');
 const router = require('express').Router();
 const { query } = require('express-validator');
 const db = require('../../utils/database');
@@ -113,6 +114,8 @@ router.get('/generate-presigned-url',
       return res.status(400).json({ message: `File size exceeds the maximum limit. Maximum allowed size for this file type is ${maxSize} bytes (${maxSize / 1024 / 1024} MB).` });
     }
 
+    req.fileMaxSize = maxSize;
+
     next();
   },
   async (req, res, next) => {
@@ -123,30 +126,34 @@ router.get('/generate-presigned-url',
     middleware(req, res, next);
   },
   async (req, res) => {
-    const { fileName, fileType } = req.query;
-    const expiresIn = 3600;
-    // Set parameters for the URL
-    const urlParams = {
-      Bucket: 'mra-public-bucket',
-      Key: fileName,
-      ContentType: fileType,
-      ACL: 'public-read',
-      Metadata: {
-        originalName: fileName,
-        domain:req.query.domain,
-        userId:req.user?.userId
-      },
-      ContentDisposition: "inline",
-      Tagging: `domain=${req.query.domain}&userId=${req.user?.userId}`,
-    };
-    try {
-      // Generate the URL      
-      const url = await getSignedUrl(s3Client, new PutObjectCommand(urlParams), {
-        expiresIn
+    const { fileName, fileType, domain, userId, fileMaxSize } = req.query;
+    const bucketName = 'mra-public-bucket';
+    const expiresIn = 900;
+    const fields = {
+      key: fileName,
+      'Content-Type': fileType,
+      'x-amz-meta-originalname': fileName,
+      'tagging': `<Tagging><TagSet><Tag><Key>domain</Key><Value>${domain}</Value></Tag><Tag><Key>userId</Key><Value>${userId}</Value></Tag></TagSet></Tagging>`
+  };
+
+  const conditions = [
+      { key: fileName },
+      { 'Content-Type': fileType },
+      { 'x-amz-meta-originalname': fileName },
+      ['starts-with', '$tagging', ''],
+      ['content-length-range', 0, fileMaxSize]
+  ];
+
+  try {
+      const { url, fields: postFields } = await createPresignedPost(s3Client, {
+          Bucket: bucketName,
+          Key: fileName,
+          Expires: expiresIn,
+          Fields: fields,
+          Conditions: conditions
       });
-      const expires = Math.floor(Date.now() / 1000) + expiresIn;
-      // Send the presigned URL and its expiration time
-      res.json({ presignedUrl: url, exp: expires });
+      console.log(postFields);
+      res.json({ url, fields: postFields });
     } catch (err) {
       updateEventLog(req, err);
       return res.status(500).json({ message: err.message });

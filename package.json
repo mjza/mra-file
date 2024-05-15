@@ -14,8 +14,9 @@
   "author": "Mahdi Jaberzadeh Ansari",
   "license": "Copyright 2023-2024 ReportCycle Inc.",
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.574.0",
+    "@aws-sdk/client-s3": "^3.576.0",
     "@aws-sdk/lib-storage": "^3.574.0",
+    "@aws-sdk/s3-presigned-post": "^3.576.0",
     "@aws-sdk/s3-request-presigner": "^3.574.0",
     "axios": "^1.6.2",
     "cookie-parser": "^1.4.6",

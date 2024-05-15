@@ -87,7 +87,7 @@ router.get('/generate-presigned-url',
     const { fileType, fileSize } = req.query;
     let maxSize = 0;
 
-    switch(fileType) {
+    switch (fileType) {
       case 'image/jpeg':
       case 'image/jpg':
       case 'image/png':
@@ -123,30 +123,43 @@ router.get('/generate-presigned-url',
     middleware(req, res, next);
   },
   async (req, res) => {
-    const { fileName, fileType } = req.query;
-    const expiresIn = 3600;
-    // Set parameters for the URL
-    const urlParams = {
-      Bucket: 'mra-public-bucket',
-      Key: fileName,
-      ContentType: fileType,
-      ACL: 'public-read',
-      Metadata: {
-        originalName: fileName,
-        domain:req.query.domain,
-        userId:req.user?.userId
-      },
-      ContentDisposition: "inline",
-      Tagging: `domain=${req.query.domain}&userId=${req.user?.userId}`,
-    };
     try {
+      const { fileName, fileType, domain } = req.query;
+      const { userId } = req.user;
+      const bucketName = 'mra-public-bucket';
+      const expiresIn = 3600;
+      
+      const tags = `domain=${domain}&user-id=${userId}`;
+      const metadata = {
+        'original-name': fileName,
+        'domain': String(domain),
+        'user-id': String(userId)
+      };
+  
+      const urlParams = {
+        Bucket: bucketName,
+        Key: fileName,
+        ContentType: fileType,
+        Metadata: metadata,
+        Tagging: tags,
+      };
+  
+      const headers = {
+        'Content-Type': fileType,
+        'x-amz-tagging': tags,
+        'x-amz-meta-original-name': metadata['original-name'],
+        'x-amz-meta-domain': metadata['domain'],
+        'x-amz-meta-user-id': metadata['user-id']
+      };
+  
       // Generate the URL      
       const url = await getSignedUrl(s3Client, new PutObjectCommand(urlParams), {
-        expiresIn
+        expiresIn,
+        unhoistableHeaders: new Set(Object.keys(headers)),
       });
       const expires = Math.floor(Date.now() / 1000) + expiresIn;
       // Send the presigned URL and its expiration time
-      res.json({ presignedUrl: url, exp: expires });
+      res.json({ presignedUrl: url, exp: expires, headers });
     } catch (err) {
       updateEventLog(req, err);
       return res.status(500).json({ message: err.message });

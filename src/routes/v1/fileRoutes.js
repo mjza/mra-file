@@ -6,6 +6,8 @@ const db = require('../../utils/database');
 const { apiRequestLimiter } = require('../../utils/rateLimit');
 const { updateEventLog } = require('../../utils/logger');
 const { authorizeUser, checkRequestValidity } = require('../../utils/validations');
+const { generateUUIDWithUTCTimestamp } = require('../../utils/generators');
+const { extractFileExtension } = require('../../utils/converters');
 
 // Configure the AWS S3 client
 const s3Client = new S3Client({
@@ -26,6 +28,12 @@ const s3Client = new S3Client({
  *     security:
  *       - bearerAuth: []
  *     parameters:
+ *       - in: query
+ *         name: countryISOCode
+ *         required: true
+ *         type: string
+ *         example: "ca"
+ *         description: CountryISOCode must be a non-empty string with 2 characters.
  *       - in: query
  *         name: fileName
  *         required: true
@@ -75,43 +83,38 @@ const s3Client = new S3Client({
 router.get('/generate-presigned-url',
   apiRequestLimiter,
   [
+    query('countryISOCode', 'CountryISOCode must be a non-empty string with 2 characters.').isString().isLength({ min: 2, max: 2 }),
     query('fileName', 'FileName must be a non-empty string.').isString(),
     query('fileType', 'FileType must be a valid MIME type.')
       .isString()
-      .isIn(['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp', 'image/heic', 'image/heif', 'video/mp4', 'video/quicktime', 'video/x-msvideo', 'audio/mpeg', 'audio/wav', 'audio/ogg']), // Add other MIME types as needed
+      .isIn(['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp', 'image/heic', 'image/heif', 'video/mp4', 'video/quicktime', 'video/x-msvideo', 'audio/mpeg', 'audio/wav', 'audio/ogg']),
     query('domain', 'Domain must be a number.').isNumeric().toInt(),
     query('fileSize', 'FileSize must be a number representing the file size in bytes.').isNumeric().toInt(),
   ],
   checkRequestValidity,
   async (req, res, next) => {
-    const { fileType, fileSize } = req.query;
+    const { fileType, fileSize, countryISOCode } = req.query;
     let maxSize = 0;
+    let fileKind = "unknown file types";
 
-    switch (fileType) {
-      case 'image/jpeg':
-      case 'image/jpg':
-      case 'image/png':
-      case 'image/gif':
-      case 'image/bmp':
-      case 'image/heic':
-      case 'image/heif':
-        maxSize = 10 * 1024 * 1024; // 10 MB
-        break;
-      case 'audio/mpeg':
-      case 'audio/wav':
-      case 'audio/ogg':
-        maxSize = 25 * 1024 * 1024; // 25 MB
-        break;
-      case 'video/mp4':
-      case 'video/quicktime':
-      case 'video/x-msvideo':
-        maxSize = 100 * 1024 * 1024; // 100 MB
-        break;
+    if (fileType.startsWith('image/')) {
+      maxSize = 10 * 1024 * 1024; // 10 MB
+      fileKind = "images";
+    } else if (fileType.startsWith('audio/')) {
+      maxSize = 25 * 1024 * 1024; // 25 MB
+      fileKind = "audios";
+    } else if (fileType.startsWith('video/')) {
+      maxSize = 100 * 1024 * 1024; // 100 MB
+      fileKind = "videos";
     }
 
-    if (fileSize > maxSize) {
-      return res.status(400).json({ message: `File size exceeds the maximum limit. Maximum allowed size for this file type is ${maxSize} bytes (${maxSize / 1024 / 1024} MB).` });
+    if (maxSize === 0) {
+      return res.status(400).json({ message: `We just accept images, audios and videos.` });
+    } else if (fileSize > maxSize) {
+      return res.status(400).json({ message: `File size exceeds the maximum limit. Maximum allowed size for ${fileKind} is ${maxSize} bytes (${maxSize / 1024 / 1024} MB).` });
     }
+
+    req.storingFolder = `${fileKind}/${countryISOCode.toLowerCase()}`;
 
     next();
   },
@@ -127,31 +130,33 @@ router.get('/generate-presigned-url',
       const { fileName, fileType, domain } = req.query;
       const { userId } = req.user;
       const bucketName = 'mra-public-bucket';
-      const expiresIn = 3600;
-      
+      const expiresIn = 900;
+
+      const fileKey = `${req.storingFolder}/d${domain}/u${userId}/${generateUUIDWithUTCTimestamp()}-org${extractFileExtension(fileName)}`;
+
       const tags = `domain=${domain}&user-id=${userId}`;
       const metadata = {
         'original-name': fileName,
         'domain': String(domain),
         'user-id': String(userId)
       };
-  
+
       const urlParams = {
         Bucket: bucketName,
-        Key: fileName,
+        Key: fileKey,
         ContentType: fileType,
         Metadata: metadata,
         Tagging: tags,
       };
-  
+
       const headers = {
-        'Content-Type': fileType,
+        'content-type': fileType,
         'x-amz-tagging': tags,
         'x-amz-meta-original-name': metadata['original-name'],
         'x-amz-meta-domain': metadata['domain'],
         'x-amz-meta-user-id': metadata['user-id']
       };
-  
+
       // Generate the URL      
       const url = await getSignedUrl(s3Client, new PutObjectCommand(urlParams), {
         expiresIn,

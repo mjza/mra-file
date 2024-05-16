@@ -293,5 +293,19 @@ function hideSensitiveData(obj, forbiddenProperties) {
     return newObj;
 }
 
+/**
+ * Extracts the file extension from a given file name, including the dot.
+ *
+ * @param {string} fileName - The name of the file.
+ * @returns {string} The file extension including the dot, or an empty string if no extension is found.
+ */
+function extractFileExtension(fileName) {
+    const dotIndex = fileName.lastIndexOf('.');
+    if (dotIndex === -1 || dotIndex === fileName.length - 1) {
+        return ''; // No extension found or dot is the last character
+    }
+    return fileName.slice(dotIndex);
+}
 
-module.exports = { toLowerCamelCase, toSnakeCase, encrypt, decrypt, encryptObjectItems, decryptObjectItems, convertRequestData };
+
+module.exports = { toLowerCamelCase, toSnakeCase, encrypt, decrypt, encryptObjectItems, decryptObjectItems, convertRequestData, extractFileExtension };

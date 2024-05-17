@@ -1,7 +1,7 @@
-const { S3Client, PutObjectCommand } = require("@aws-sdk/client-s3");
+const { S3Client, PutObjectCommand, ListObjectsV2Command, GetObjectCommand } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const router = require('express').Router();
-const { query } = require('express-validator');
+const { query, body } = require('express-validator');
 const db = require('../../utils/database');
 const { apiRequestLimiter } = require('../../utils/rateLimit');
 const { updateEventLog } = require('../../utils/logger');
@@ -17,6 +17,55 @@ const s3Client = new S3Client({
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
   }
 });
+
+/**
+ * Helper function to extract bucket name, key, domain, and userId from an S3 URL.
+ *
+ * @param {string} url - The S3 URL to parse.
+ * @returns {Object} An object containing the bucket name, key, domain, and userId.
+ * @returns {string} return.bucketName - The name of the S3 bucket.
+ * @returns {string} return.region - The name of the S3 region.
+ * @returns {string} return.key - The key of the object within the S3 bucket.
+ * @returns {number} return.domain - The domain extracted from the key.
+ * @returns {number} return.userId - The user ID extracted from the key.
+ * @throws {Error} If the URL is invalid and does not match the expected S3 URL format, or if domain/userId extraction fails.
+ */
+function parseS3Url(url) {
+  const match = url.match(/^https:\/\/([^.]+)\.s3\.([^.]+)\.amazonaws\.com\/(.+)$/);
+  if (!match) {
+    throw new Error(`Invalid S3 URL: ${url}`);
+  }
+  const [, bucketName, region, key] = match;
+
+  // Extract domain and userId from the key
+  const keyParts = key.split('/');
+  // Find the domain and userId parts based on their positions
+  const domainPart = keyParts[2]; // Domain is always the third part
+  const userPart = keyParts[3]; // UserId is always the fourth part
+
+  if (!domainPart || !userPart || !domainPart.startsWith('d') || !userPart.startsWith('u')) {
+    throw new Error(`Invalid S3 key structure: ${key}`);
+  }
+
+  const domain = parseInt(domainPart.substring(1), 10); // Remove the 'd' prefix and convert to integer
+  const userId = parseInt(userPart.substring(1), 10); // Remove the 'u' prefix and convert to integer
+
+  if (isNaN(userId)) {
+    throw new Error(`Invalid userId extracted from key: ${key}`);
+  }
+
+  return { bucketName, region, key, domain, userId };
+}
+
+/**
+ * Helper function to remove the "-org" suffix and file extension from an S3 object key.
+ *
+ * @param {string} key - The key of the S3 object.
+ * @returns {string} The key with the "-org" suffix and file extension removed.
+ */
+function getKeyPrefix(key) {
+  return key.replace(/-org\.[^.]+$/, '');
+}
 
 /**
  * @swagger
@@ -75,6 +124,8 @@ const s3Client = new S3Client({
  *               description: Expiration Time of the presigned url
  *       400:
  *         $ref: '#/components/responses/ValidationError'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
  *       429:
  *         $ref: '#/components/responses/ApiRateLimitExceeded'
  *       500:
@@ -122,7 +173,7 @@ router.get('/generate-presigned-url',
     const customerId = req.query.domain;
     const isPrivateCustomer = await db.isPrivateCustomer(customerId);
     const domain = isPrivateCustomer ? String(customerId) : '0';
-    req.bucketName = isPrivateCustomer ? 'mra-private-bucket' : 'mra-public-bucket' ;
+    req.bucketName = isPrivateCustomer ? 'mra-private-bucket' : 'mra-public-bucket';
     const middleware = authorizeUser({ dom: domain, obj: 's3_files', act: 'C', attrs: {} });
     middleware(req, res, next);
   },
@@ -173,4 +224,126 @@ router.get('/generate-presigned-url',
   }
 );
 
+/**
+ * @swagger
+ * /v1/generate-access-urls:
+ *   post:
+ *     summary: Generate access URLs for S3 objects
+ *     description: Generates pre-signed URLs for accessing S3 objects. This endpoint validates that the input is an array of valid S3 URLs.
+ *     tags: [1st]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               domain:
+ *                 type: integer
+ *                 example: 0
+ *                 description: Domain identifier to check if the user has the required access rights.
+ *               urls:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   example: "https://mra-private-bucket.s3.us-east-2.amazonaws.com/images/ca/d2/u46/240517162934277-9e68-6c16-a4e7-org.jpg"
+ *                 description: An array of valid S3 URLs.
+ *     produces:
+ *       - application/json
+ *     responses:
+ *       200:
+ *         description: Successfully generated access URLs.
+ *         schema:
+ *           type: object
+ *           properties:
+ *             urls:
+ *               type: object
+ *               additionalProperties:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   description: A pre-signed URL or a public URL for the corresponding S3 object.
+ *       400:
+ *         $ref: '#/components/responses/ValidationError'
+ *       403:
+ *         $ref: '#/components/responses/Forbidden'
+ *       429:
+ *         $ref: '#/components/responses/ApiRateLimitExceeded'
+ *       500:
+ *         $ref: '#/components/responses/ServerInternalError'
+ */
+router.post('/generate-access-urls',
+  apiRequestLimiter,
+  [
+    body('domain', 'Domain must be a number.').isNumeric().toInt(),
+    body('urls', 'Urls must be an array of valid S3 URLs.')
+      .isArray()
+      .custom((urls) => {
+        const s3UrlPattern = /^https:\/\/([^.]+)\.s3\.([^.]+)\.amazonaws\.com\/(.+)$/;
+        return urls.every(url => s3UrlPattern.test(url));
+      })
+  ],
+  checkRequestValidity,
+  async (req, res, next) => {
+    const customerId = req.body.domain;
+    const isPrivateCustomer = await db.isPrivateCustomer(customerId);
+    const domain = isPrivateCustomer ? String(customerId) : '0';
+    const middleware = authorizeUser({ dom: domain, obj: 's3_files', act: 'R', attrs: {} });
+    middleware(req, res, next);
+  },
+  async (req, res) => {
+    try {
+      const { domain: customerId, urls } = req.body;
+      const expiresIn = 3600;
+      const results = {};
+
+      for (const url of urls) {
+        const { bucketName, region, key, domain } = parseS3Url(url);
+        const isPrivateBucket = bucketName.includes('private');
+        if (isPrivateBucket && domain !== customerId) {
+          return res.status(403).json({ message: 'The requested file does not belong to the customer that you have been authorized for.' });
+        }
+        const prefix = getKeyPrefix(key);
+
+        // List objects in the specified S3 bucket and folder
+        const listObjectsParams = {
+          Bucket: bucketName,
+          Prefix: prefix,
+        };
+
+        const data = await s3Client.send(new ListObjectsV2Command(listObjectsParams));
+        const objects = data.Contents || [];
+
+        // Generate URLs for each object
+        const objectUrls = await Promise.all(objects.map(async (obj) => {
+          const urlParams = {
+            Bucket: bucketName,
+            Key: obj.Key,
+          };
+
+          if (isPrivateBucket) {
+            // Generate pre-signed URL for private bucket
+            return await getSignedUrl(s3Client, new GetObjectCommand(urlParams), { expiresIn });
+          } else {
+            console.log(s3Client);
+            // Return public URL for public bucket
+            return `https://${bucketName}.s3.${region}.amazonaws.com/${obj.Key}`;
+          }
+        }));
+
+        results[url] = objectUrls;
+      }
+
+      res.json(results);
+    } catch (err) {
+      console.error(err);
+      return res.status(500).json({ message: err.message });
+    }
+  }
+);
+
 module.exports = router;
+
+

@@ -122,6 +122,7 @@ router.get('/generate-presigned-url',
     const customerId = req.query.domain;
     const isPrivateCustomer = await db.isPrivateCustomer(customerId);
     const domain = isPrivateCustomer ? String(customerId) : '0';
+    req.bucketName = isPrivateCustomer ? 'mra-private-bucket' : 'mra-public-bucket' ;
     const middleware = authorizeUser({ dom: domain, obj: 's3_files', act: 'C', attrs: {} });
     middleware(req, res, next);
   },
@@ -129,7 +130,7 @@ router.get('/generate-presigned-url',
     try {
       const { fileName, fileType, domain } = req.query;
       const { userId } = req.user;
-      const bucketName = 'mra-public-bucket';
+      const bucketName = req.bucketName;
       const expiresIn = 900;
 
       const fileKey = `${req.storingFolder}/d${domain}/u${userId}/${generateUUIDWithUTCTimestamp()}-org${extractFileExtension(fileName)}`;

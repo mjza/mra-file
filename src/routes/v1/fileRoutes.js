@@ -138,7 +138,10 @@ router.get('/generate-presigned-url',
     query('fileName', 'FileName must be a non-empty string.').isString(),
     query('fileType', 'FileType must be a valid MIME type.')
       .isString()
-      .isIn(['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp', 'image/heic', 'image/heif', 'video/mp4', 'video/quicktime', 'video/x-msvideo', 'audio/mpeg', 'audio/wav', 'audio/ogg']),
+      .isIn(['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp', 'image/heic', 'image/heif', 
+             // 'video/mp4', 'video/quicktime', 'video/x-msvideo', 
+             // 'audio/mpeg', 'audio/wav', 'audio/ogg',
+            ]),
     query('domain', 'Domain must be a number.').isNumeric().toInt(),
     query('fileSize', 'FileSize must be a number representing the file size in bytes.').isNumeric().toInt(),
   ],
@@ -151,16 +154,19 @@ router.get('/generate-presigned-url',
     if (fileType.startsWith('image/')) {
       maxSize = 10 * 1024 * 1024; // 10 MB
       fileKind = "images";
-    } else if (fileType.startsWith('audio/')) {
+    } 
+    /*
+    else if (fileType.startsWith('audio/')) {
       maxSize = 25 * 1024 * 1024; // 25 MB
       fileKind = "audios";
     } else if (fileType.startsWith('video/')) {
       maxSize = 100 * 1024 * 1024; // 100 MB
       fileKind = "videos";
     }
+    */
 
     if (maxSize === 0) {
-      return res.status(400).json({ message: `We just accept images, audios and videos.` });
+      return res.status(400).json({ message: `We just accept images right now.` });
     } else if (fileSize > maxSize) {
       return res.status(400).json({ message: `File size exceeds the maximum limit. Maximum allowed size for ${fileKind} is ${maxSize} bytes (${maxSize / 1024 / 1024} MB).` });
     }

@@ -333,7 +333,6 @@ router.post('/generate-access-urls',
             // Generate pre-signed URL for private bucket
             return await getSignedUrl(s3Client, new GetObjectCommand(urlParams), { expiresIn });
           } else {
-            console.log(s3Client);
             // Return public URL for public bucket
             return `https://${bucketName}.s3.${region}.amazonaws.com/${obj.Key}`;
           }
@@ -341,8 +340,7 @@ router.post('/generate-access-urls',
 
         results[url] = objectUrls;
       }
-
-      res.json(results);
+      res.json({urls: results});
     } catch (err) {
       console.error(err);
       return res.status(500).json({ message: err.message });

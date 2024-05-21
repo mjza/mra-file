@@ -1,4 +1,4 @@
-const { S3Client, PutObjectCommand, ListObjectsV2Command, GetObjectCommand } = require("@aws-sdk/client-s3");
+const { S3Client, PutObjectCommand, ListObjectsV2Command, GetObjectCommand, HeadObjectCommand } = require("@aws-sdk/client-s3");
 const { getSignedUrl } = require("@aws-sdk/s3-request-presigner");
 const router = require('express').Router();
 const { query, body } = require('express-validator');
@@ -66,6 +66,30 @@ function parseS3Url(url) {
 function getKeyPrefix(key) {
   return key.replace(/-org\.[^.]+$/, '');
 }
+
+/**
+ * Delays execution for a given number of milliseconds.
+ * @param {number} ms - The number of milliseconds to wait.
+ * @returns {Promise} - A promise that resolves after the specified time.
+ */
+const sleep = (ms) => {
+  return new Promise(resolve => setTimeout(resolve, ms));
+};
+
+/**
+ * Checks the status of an S3 object by examining its metadata.
+ * @param {string} bucketName - The name of the S3 bucket.
+ * @param {string} key - The key of the S3 object.
+ * @returns {Promise<string>} - The status of the S3 object.
+ */
+const checkObjectStatus = async (bucketName, key) => {
+  const headParams = {
+    Bucket: bucketName,
+    Key: key
+  };
+  const headData = await s3Client.send(new HeadObjectCommand(headParams));
+  return headData.Metadata.status || 'completed'; // Default to 'completed' if no status found
+};
 
 /**
  * @swagger
@@ -196,7 +220,8 @@ router.get('/generate-presigned-url',
       const metadata = {
         'original-name': fileName,
         'domain': String(domain),
-        'user-id': String(userId)
+        'user-id': String(userId),
+        'status': 'processing',
       };
 
       const urlParams = {
@@ -212,7 +237,8 @@ router.get('/generate-presigned-url',
         'x-amz-tagging': tags,
         'x-amz-meta-original-name': metadata['original-name'],
         'x-amz-meta-domain': metadata['domain'],
-        'x-amz-meta-user-id': metadata['user-id']
+        'x-amz-meta-user-id': metadata['user-id'],
+        'x-amz-meta-status': metadata['status'],
       };
 
       // Generate the URL      
@@ -311,6 +337,15 @@ router.post('/generate-access-urls',
         if (isPrivateBucket && domain !== customerId) {
           return res.status(403).json({ message: 'The requested file does not belong to the customer that you have been authorized for.' });
         }
+
+        let status = await checkObjectStatus(bucketName, key);
+        let waiting = 1000;
+        while (status === 'processing') {
+          await sleep(waiting); 
+          status = await checkObjectStatus(bucketName, key);
+          waiting += 2000;
+        }
+
         const prefix = getKeyPrefix(key);
 
         // List objects in the specified S3 bucket and folder

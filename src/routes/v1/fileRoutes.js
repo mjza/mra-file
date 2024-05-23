@@ -163,7 +163,7 @@ router.get('/generate-presigned-put-url',
     query('fileName', 'FileName must be a non-empty string.').isString(),
     query('fileType', 'FileType must be a valid MIME type.')
       .isString()
-      .isIn(['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp', 'image/heic', 'image/heif', ]),
+      .isIn(['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp',]),
     query('domain', 'Domain must be a number.').isNumeric().toInt(),
     query('fileSize', 'FileSize must be a number representing the file size in bytes.').isNumeric().toInt(),
   ],
@@ -316,7 +316,7 @@ router.get('/generate-presigned-post-url',
     query('fileName', 'FileName must be a non-empty string.').isString(),
     query('fileType', 'FileType must be a valid MIME type.')
       .isString()
-      .isIn(['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp', 'image/heic', 'image/heif', ]),
+      .isIn(['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp']),
     query('domain', 'Domain must be a number.').isNumeric().toInt(),
     query('fileSize', 'FileSize must be a number representing the file size in bytes.').isNumeric().toInt(),
   ],
@@ -490,8 +490,7 @@ router.post('/generate-access-urls',
         let status = await checkObjectStatus(bucketName, key);
         let waiting = 1000;
         while (status === 'processing') {
-          console.log(waiting);
-          await sleep(waiting); 
+          await sleep(waiting);
           status = await checkObjectStatus(bucketName, key);
           waiting += 1000;
         }
@@ -525,7 +524,7 @@ router.post('/generate-access-urls',
 
         results[url] = objectUrls;
       }
-      res.json({urls: results});
+      res.json({ urls: results });
     } catch (err) {
       console.error(err);
       return res.status(500).json({ message: err.message });

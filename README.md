@@ -48,6 +48,7 @@ heroku config:set CORS_ALLOWED_URLS=http://localhost:2583, https://myreportapp.c
 heroku config:set AWS_ACCESS_KEY_ID=AAA --app mra-file
 heroku config:set AWS_SECRET_ACCESS_KEY=WWW --app mra-file
 heroku config:set AWS_REGION=ZZZ --app mra-file
+heroku config:set ACTIVATE_SWAGGER=true --app mra-file
 ```
 
 Then run run the above commands in the Heroku CLI or go to the `mra-file` application, then in the `Settings` tab press on the `Reveal Config Vars` button and edit them directly. Like the following picture:

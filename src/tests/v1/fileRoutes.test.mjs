@@ -23,14 +23,11 @@ describe('/generate-presigned-url endpoints', () => {
     beforeAll(async () => {
 
         mockUser = await generateMockUserRoute();
-        console.log(mockUser);
         let response = await axiosInstance.post(`${process.env.AUTH_SERVER_URL}/v1/register`, mockUser, { headers });
-        console.log(response.data);
         const userId = response.data.userId;
         // Get the test user from the database
         const testUser = await getUserByUserId(userId);
         const inactiveUser = { username: testUser.username, activationCode: testUser.activation_code };
-        console.log(inactiveUser);
         await axiosInstance.post(`${process.env.AUTH_SERVER_URL}/v1/activate-by-code`, inactiveUser, { headers });
         const user = { usernameOrEmail: mockUser.username, password: mockUser.password };
         response = await axiosInstance.post(`${process.env.AUTH_SERVER_URL}/v1/login`, user, { headers });

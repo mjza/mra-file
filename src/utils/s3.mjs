@@ -1,4 +1,5 @@
 import { S3Client } from '@aws-sdk/client-s3';
+import { HeadObjectCommand } from "@aws-sdk/client-s3";
 
 let s3ClientInstance = null;
 

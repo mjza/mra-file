@@ -83,3 +83,152 @@ They are needed in the workflow codes that we generated for automatically taggin
 
 `main.yml` is run automatically when we push to main branch. However, after a seccessful push to Heroku, we must run the other workflow in GitHub manually. 
 ![](./images/figure5.png)
+
+## Troubleshooting
+
+If you face with this type of error in Heroku or GitHub log:
+
+```bash
+2024-10-08T23:37:02.957587+00:00 app[web.1]: ConnectionError [SequelizeConnectionError]: password authentication failed for user "khmywybwogatvd"
+2024-10-08T23:37:02.957604+00:00 app[web.1]:     at Client._connectionCallback (/app/node_modules/sequelize/lib/dialects/postgres/connection-manager.js:145:24)
+2024-10-08T23:37:02.957608+00:00 app[web.1]:     at Client._handleErrorWhileConnecting (/app/node_modules/pg/lib/client.js:326:19)
+2024-10-08T23:37:02.957612+00:00 app[web.1]:     at Client._handleErrorMessage (/app/node_modules/pg/lib/client.js:346:19)
+2024-10-08T23:37:02.957612+00:00 app[web.1]:     at Connection.emit (node:events:519:28)
+2024-10-08T23:37:02.957613+00:00 app[web.1]:     at /app/node_modules/pg/lib/connection.js:116:12
+2024-10-08T23:37:02.957613+00:00 app[web.1]:     at Parser.parse (/app/node_modules/pg-protocol/dist/parser.js:36:17)
+2024-10-08T23:37:02.957613+00:00 app[web.1]:     at TLSSocket.<anonymous> (/app/node_modules/pg-protocol/dist/index.js:11:42)
+2024-10-08T23:37:02.957614+00:00 app[web.1]:     at TLSSocket.emit (node:events:519:28)
+2024-10-08T23:37:02.957614+00:00 app[web.1]:     at addChunk (node:internal/streams/readable:559:12)
+2024-10-08T23:37:02.957614+00:00 app[web.1]:     at readableAddChunkPushByteMode (node:internal/streams/readable:510:3) {
+2024-10-08T23:37:02.957614+00:00 app[web.1]:   parent: error: password authentication failed for user "khmywybwogatvd"
+2024-10-08T23:37:02.957614+00:00 app[web.1]:       at Parser.parseErrorMessage (/app/node_modules/pg-protocol/dist/parser.js:283:98)
+2024-10-08T23:37:02.957614+00:00 app[web.1]:       at Parser.handlePacket (/app/node_modules/pg-protocol/dist/parser.js:122:29)
+2024-10-08T23:37:02.957615+00:00 app[web.1]:       at Parser.parse (/app/node_modules/pg-protocol/dist/parser.js:35:38)
+2024-10-08T23:37:02.957615+00:00 app[web.1]:       at TLSSocket.<anonymous> (/app/node_modules/pg-protocol/dist/index.js:11:42)
+2024-10-08T23:37:02.957615+00:00 app[web.1]:       at TLSSocket.emit (node:events:519:28)
+2024-10-08T23:37:02.957615+00:00 app[web.1]:       at addChunk (node:internal/streams/readable:559:12)
+2024-10-08T23:37:02.957616+00:00 app[web.1]:       at readableAddChunkPushByteMode (node:internal/streams/readable:510:3)
+2024-10-08T23:37:02.957616+00:00 app[web.1]:       at Readable.push (node:internal/streams/readable:390:5)
+2024-10-08T23:37:02.957616+00:00 app[web.1]:       at TLSWrap.onStreamRead (node:internal/stream_base_commons:191:23) {
+2024-10-08T23:37:02.957616+00:00 app[web.1]:     length: 110,
+2024-10-08T23:37:02.957617+00:00 app[web.1]:     severity: 'FATAL',
+2024-10-08T23:37:02.957617+00:00 app[web.1]:     code: '28P01',
+2024-10-08T23:37:02.957617+00:00 app[web.1]:     detail: undefined,
+2024-10-08T23:37:02.957617+00:00 app[web.1]:     hint: undefined,
+2024-10-08T23:37:02.957617+00:00 app[web.1]:     position: undefined,
+2024-10-08T23:37:02.957618+00:00 app[web.1]:     internalPosition: undefined,
+2024-10-08T23:37:02.957618+00:00 app[web.1]:     internalQuery: undefined,
+2024-10-08T23:37:02.957618+00:00 app[web.1]:     where: undefined,
+2024-10-08T23:37:02.957618+00:00 app[web.1]:     schema: undefined,
+2024-10-08T23:37:02.957618+00:00 app[web.1]:     table: undefined,
+2024-10-08T23:37:02.957618+00:00 app[web.1]:     column: undefined,
+2024-10-08T23:37:02.957618+00:00 app[web.1]:     dataType: undefined,
+2024-10-08T23:37:02.957619+00:00 app[web.1]:     constraint: undefined,
+2024-10-08T23:37:02.957619+00:00 app[web.1]:     file: 'auth.c',
+2024-10-08T23:37:02.957619+00:00 app[web.1]:     line: '329',
+2024-10-08T23:37:02.957619+00:00 app[web.1]:     routine: 'auth_failed'
+2024-10-08T23:37:02.957620+00:00 app[web.1]:   },
+2024-10-08T23:37:02.957620+00:00 app[web.1]:   original: error: password authentication failed for user "khmywybwogatvd"
+2024-10-08T23:37:02.957620+00:00 app[web.1]:       at Parser.parseErrorMessage (/app/node_modules/pg-protocol/dist/parser.js:283:98)
+2024-10-08T23:37:02.957620+00:00 app[web.1]:       at Parser.handlePacket (/app/node_modules/pg-protocol/dist/parser.js:122:29)
+2024-10-08T23:37:02.957620+00:00 app[web.1]:       at Parser.parse (/app/node_modules/pg-protocol/dist/parser.js:35:38)
+2024-10-08T23:37:02.957620+00:00 app[web.1]:       at TLSSocket.<anonymous> (/app/node_modules/pg-protocol/dist/index.js:11:42)
+2024-10-08T23:37:02.957621+00:00 app[web.1]:       at TLSSocket.emit (node:events:519:28)
+2024-10-08T23:37:02.957621+00:00 app[web.1]:       at addChunk (node:internal/streams/readable:559:12)
+2024-10-08T23:37:02.957621+00:00 app[web.1]:       at readableAddChunkPushByteMode (node:internal/streams/readable:510:3)
+2024-10-08T23:37:02.957621+00:00 app[web.1]:       at Readable.push (node:internal/streams/readable:390:5)
+2024-10-08T23:37:02.957621+00:00 app[web.1]:       at TLSWrap.onStreamRead (node:internal/stream_base_commons:191:23) {
+2024-10-08T23:37:02.957621+00:00 app[web.1]:     length: 110,
+2024-10-08T23:37:02.957621+00:00 app[web.1]:     severity: 'FATAL',
+2024-10-08T23:37:02.957622+00:00 app[web.1]:     code: '28P01',
+2024-10-08T23:37:02.957622+00:00 app[web.1]:     detail: undefined,
+2024-10-08T23:37:02.957622+00:00 app[web.1]:     hint: undefined,
+2024-10-08T23:37:02.957622+00:00 app[web.1]:     position: undefined,
+2024-10-08T23:37:02.957622+00:00 app[web.1]:     internalPosition: undefined,
+2024-10-08T23:37:02.957622+00:00 app[web.1]:     internalQuery: undefined,
+2024-10-08T23:37:02.957622+00:00 app[web.1]:     where: undefined,
+2024-10-08T23:37:02.957623+00:00 app[web.1]:     schema: undefined,
+2024-10-08T23:37:02.957623+00:00 app[web.1]:     table: undefined,
+2024-10-08T23:37:02.957623+00:00 app[web.1]:     column: undefined,
+2024-10-08T23:37:02.957623+00:00 app[web.1]:     dataType: undefined,
+2024-10-08T23:37:02.957623+00:00 app[web.1]:     constraint: undefined,
+2024-10-08T23:37:02.957623+00:00 app[web.1]:     file: 'auth.c',
+2024-10-08T23:37:02.957623+00:00 app[web.1]:     line: '329',
+2024-10-08T23:37:02.957624+00:00 app[web.1]:     routine: 'auth_failed'
+2024-10-08T23:37:02.957624+00:00 app[web.1]:   }
+2024-10-08T23:37:02.957624+00:00 app[web.1]: }
+2024-10-08T23:37:03.132125+00:00 app[web.1]: /app/node_modules/sequelize/lib/dialects/postgres/connection-manager.js:145
+2024-10-08T23:37:03.132126+00:00 app[web.1]:                 reject(new sequelizeErrors.ConnectionError(err));
+2024-10-08T23:37:03.132127+00:00 app[web.1]:                        ^
+2024-10-08T23:37:03.132127+00:00 app[web.1]: 
+2024-10-08T23:37:03.132128+00:00 app[web.1]: ConnectionError [SequelizeConnectionError]: password authentication failed for user "khmywybwogatvd"
+2024-10-08T23:37:03.132128+00:00 app[web.1]:     at Client._connectionCallback (/app/node_modules/sequelize/lib/dialects/postgres/connection-manager.js:145:24)
+2024-10-08T23:37:03.132128+00:00 app[web.1]:     at Client._handleErrorWhileConnecting (/app/node_modules/pg/lib/client.js:326:19)
+2024-10-08T23:37:03.132129+00:00 app[web.1]:     at Client._handleErrorMessage (/app/node_modules/pg/lib/client.js:346:19)
+2024-10-08T23:37:03.132129+00:00 app[web.1]:     at Connection.emit (node:events:519:28)
+2024-10-08T23:37:03.132129+00:00 app[web.1]:     at /app/node_modules/pg/lib/connection.js:116:12
+2024-10-08T23:37:03.132130+00:00 app[web.1]:     at Parser.parse (/app/node_modules/pg-protocol/dist/parser.js:36:17)
+2024-10-08T23:37:03.132130+00:00 app[web.1]:     at TLSSocket.<anonymous> (/app/node_modules/pg-protocol/dist/index.js:11:42)
+2024-10-08T23:37:03.132130+00:00 app[web.1]:     at TLSSocket.emit (node:events:519:28)
+2024-10-08T23:37:03.132130+00:00 app[web.1]:     at addChunk (node:internal/streams/readable:559:12)
+2024-10-08T23:37:03.132131+00:00 app[web.1]:     at readableAddChunkPushByteMode (node:internal/streams/readable:510:3) {
+2024-10-08T23:37:03.132131+00:00 app[web.1]:   parent: error: password authentication failed for user "khmywybwogatvd"
+2024-10-08T23:37:03.132131+00:00 app[web.1]:       at Parser.parseErrorMessage (/app/node_modules/pg-protocol/dist/parser.js:283:98)
+2024-10-08T23:37:03.132131+00:00 app[web.1]:       at Parser.handlePacket (/app/node_modules/pg-protocol/dist/parser.js:122:29)
+2024-10-08T23:37:03.132132+00:00 app[web.1]:       at Parser.parse (/app/node_modules/pg-protocol/dist/parser.js:35:38)
+2024-10-08T23:37:03.132132+00:00 app[web.1]:       at TLSSocket.<anonymous> (/app/node_modules/pg-protocol/dist/index.js:11:42)
+2024-10-08T23:37:03.132132+00:00 app[web.1]:       at TLSSocket.emit (node:events:519:28)
+2024-10-08T23:37:03.132132+00:00 app[web.1]:       at addChunk (node:internal/streams/readable:559:12)
+2024-10-08T23:37:03.132133+00:00 app[web.1]:       at readableAddChunkPushByteMode (node:internal/streams/readable:510:3)
+2024-10-08T23:37:03.132133+00:00 app[web.1]:       at Readable.push (node:internal/streams/readable:390:5)
+2024-10-08T23:37:03.132133+00:00 app[web.1]:       at TLSWrap.onStreamRead (node:internal/stream_base_commons:191:23) {
+2024-10-08T23:37:03.132133+00:00 app[web.1]:     length: 110,
+2024-10-08T23:37:03.132134+00:00 app[web.1]:     severity: 'FATAL',
+2024-10-08T23:37:03.132134+00:00 app[web.1]:     code: '28P01',
+2024-10-08T23:37:03.132134+00:00 app[web.1]:     detail: undefined,
+2024-10-08T23:37:03.132134+00:00 app[web.1]:     hint: undefined,
+2024-10-08T23:37:03.132135+00:00 app[web.1]:     position: undefined,
+2024-10-08T23:37:03.132135+00:00 app[web.1]:     internalPosition: undefined,
+2024-10-08T23:37:03.132135+00:00 app[web.1]:     internalQuery: undefined,
+2024-10-08T23:37:03.132135+00:00 app[web.1]:     where: undefined,
+2024-10-08T23:37:03.132135+00:00 app[web.1]:     schema: undefined,
+2024-10-08T23:37:03.132136+00:00 app[web.1]:     table: undefined,
+2024-10-08T23:37:03.132136+00:00 app[web.1]:     column: undefined,
+2024-10-08T23:37:03.132136+00:00 app[web.1]:     dataType: undefined,
+2024-10-08T23:37:03.132136+00:00 app[web.1]:     constraint: undefined,
+2024-10-08T23:37:03.132136+00:00 app[web.1]:     file: 'auth.c',
+2024-10-08T23:37:03.132136+00:00 app[web.1]:     line: '329',
+2024-10-08T23:37:03.132136+00:00 app[web.1]:     routine: 'auth_failed'
+2024-10-08T23:37:03.132137+00:00 app[web.1]:   },
+2024-10-08T23:37:03.132137+00:00 app[web.1]:   original: error: password authentication failed for user "khmywybwogatvd"
+2024-10-08T23:37:03.132137+00:00 app[web.1]:       at Parser.parseErrorMessage (/app/node_modules/pg-protocol/dist/parser.js:283:98)
+2024-10-08T23:37:03.132137+00:00 app[web.1]:       at Parser.handlePacket (/app/node_modules/pg-protocol/dist/parser.js:122:29)
+2024-10-08T23:37:03.132137+00:00 app[web.1]:       at Parser.parse (/app/node_modules/pg-protocol/dist/parser.js:35:38)
+2024-10-08T23:37:03.132137+00:00 app[web.1]:       at TLSSocket.<anonymous> (/app/node_modules/pg-protocol/dist/index.js:11:42)
+2024-10-08T23:37:03.132137+00:00 app[web.1]:       at TLSSocket.emit (node:events:519:28)
+2024-10-08T23:37:03.132138+00:00 app[web.1]:       at addChunk (node:internal/streams/readable:559:12)
+2024-10-08T23:37:03.132138+00:00 app[web.1]:       at readableAddChunkPushByteMode (node:internal/streams/readable:510:3)
+2024-10-08T23:37:03.132138+00:00 app[web.1]:       at Readable.push (node:internal/streams/readable:390:5)
+2024-10-08T23:37:03.132138+00:00 app[web.1]:       at TLSWrap.onStreamRead (node:internal/stream_base_commons:191:23) {
+2024-10-08T23:37:03.132138+00:00 app[web.1]:     length: 110,
+2024-10-08T23:37:03.132138+00:00 app[web.1]:     severity: 'FATAL',
+2024-10-08T23:37:03.132138+00:00 app[web.1]:     code: '28P01',
+2024-10-08T23:37:03.132139+00:00 app[web.1]:     detail: undefined,
+2024-10-08T23:37:03.132139+00:00 app[web.1]:     hint: undefined,
+2024-10-08T23:37:03.132139+00:00 app[web.1]:     position: undefined,
+2024-10-08T23:37:03.132139+00:00 app[web.1]:     internalPosition: undefined,
+2024-10-08T23:37:03.132139+00:00 app[web.1]:     internalQuery: undefined,
+2024-10-08T23:37:03.132139+00:00 app[web.1]:     where: undefined,
+2024-10-08T23:37:03.132139+00:00 app[web.1]:     schema: undefined,
+2024-10-08T23:37:03.132140+00:00 app[web.1]:     table: undefined,
+2024-10-08T23:37:03.132140+00:00 app[web.1]:     column: undefined,
+2024-10-08T23:37:03.132140+00:00 app[web.1]:     dataType: undefined,
+2024-10-08T23:37:03.132140+00:00 app[web.1]:     constraint: undefined,
+2024-10-08T23:37:03.132140+00:00 app[web.1]:     file: 'auth.c',
+2024-10-08T23:37:03.132140+00:00 app[web.1]:     line: '329',
+2024-10-08T23:37:03.132140+00:00 app[web.1]:     routine: 'auth_failed'
+2024-10-08T23:37:03.132141+00:00 app[web.1]:   }
+2024-10-08T23:37:03.132141+00:00 app[web.1]: }
+```
+
+It is because of DB connection data that is set wrongly in Heroku or GitHub
